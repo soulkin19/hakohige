@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>横向き箱ひげ図ジェネレーター</title>
+  <title>横向き箱ひげ図ジェネレーター（改良版）</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@sgratzl/chartjs-chart-boxplot@4.4.5/build/index.umd.min.js"></script>
 
@@ -62,6 +62,18 @@
       font-size: 15px;
       user-select: none;
     }
+    .range-inputs {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+    .range-inputs input {
+      width: 120px;
+      padding: 8px;
+      border: 1px solid #ced4da;
+      border-radius: 6px;
+      font-size: 14px;
+    }
     #chartContainer {
       margin-top: 24px;
       height: 420px;
@@ -70,6 +82,27 @@
       border-radius: 8px;
       overflow: hidden;
       padding: 12px;
+    }
+    #dataSection {
+      margin-top: 32px;
+      padding: 16px;
+      background: #f1f3f5;
+      border-radius: 8px;
+    }
+    #dataSection h3 {
+      margin: 0 0 12px;
+      font-size: 18px;
+      color: #2c3e50;
+    }
+    #dataList {
+      list-style: none;
+      padding: 0;
+      columns: 3;
+      font-family: monospace;
+      font-size: 14px;
+    }
+    #dataList li {
+      margin-bottom: 4px;
     }
     pre {
       background: #f1f3f5;
@@ -82,8 +115,8 @@
 <body>
 
 <div class="container">
-  <h2>横向き箱ひげ図ジェネレーター</h2>
-  <p>1行に1つの数値を入力してください（空行・文字は自動無視されます）</p>
+  <h2>横向き箱ひげ図ジェネレーター（データポイント非表示 + 範囲指定）</h2>
+  <p>1行に1つの数値を入力してください（空行・文字は自動無視されます）。データポイント（外れ値など）はグラフ上から非表示にし、下の「データ一覧」から確認できます。</p>
 
   <pre>例：
 55
@@ -106,10 +139,19 @@
     <label>
       <input type="checkbox" id="realtime" checked> 入力中にリアルタイム更新
     </label>
+    <div class="range-inputs">
+      <label>表示最小値: <input type="number" id="minValue" placeholder="自動"></label>
+      <label>表示最大値: <input type="number" id="maxValue" placeholder="自動"></label>
+    </div>
   </div>
 
   <div id="chartContainer">
     <canvas id="myChart"></canvas>
+  </div>
+
+  <div id="dataSection">
+    <h3>データ一覧（ソート済み）</h3>
+    <ul id="dataList"></ul>
   </div>
 </div>
 
@@ -123,13 +165,22 @@ function draw() {
   const numbers = lines
     .map(line => line.trim())
     .filter(line => line !== '' && !isNaN(parseFloat(line)))
-    .map(Number);
+    .map(Number)
+    .sort((a, b) => a - b);  // ソートして一覧表示用
 
   if (numbers.length < 4) {
     alert('箱ひげ図には4個以上の数値が推奨されます');
     if (chart) chart.destroy();
+    updateDataList([]);
     return;
   }
+
+  // データ一覧更新
+  updateDataList(numbers);
+
+  // 範囲入力
+  const minVal = parseFloat(document.getElementById('minValue').value) || undefined;
+  const maxVal = parseFloat(document.getElementById('maxValue').value) || undefined;
 
   const data = {
     labels: ['データ分布'],
@@ -140,10 +191,10 @@ function draw() {
       backgroundColor: 'rgba(54, 162, 235, 0.28)',
       borderColor: 'rgba(54, 162, 235, 0.9)',
       borderWidth: 2,
-      outlierColor: '#ff6b6b',
+      outlierColor: 'transparent',  // 外れ値非表示
+      outlierRadius: 0,             // 外れ値非表示
+      itemRadius: 0,                // データポイント非表示
       padding: 20,
-      itemRadius: 5,
-      outlierRadius: 6,
       whiskerColor: 'rgba(0,0,0,0.5)',
       medianColor: '#2c3e50',
       medianWidth: 3
@@ -154,7 +205,7 @@ function draw() {
     type: 'boxplot',
     data: data,
     options: {
-      indexAxis: 'y',               // ← これで横向き！
+      indexAxis: 'y',               // 横向き
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
@@ -175,9 +226,11 @@ function draw() {
             display: true,
             text: '値',
             font: { size: 15 }
-          }
+          },
+          min: minVal,
+          max: maxVal
         },
-        y: {  // カテゴリ軸（縦）→今回は1グループだけ
+        y: {  // カテゴリ軸（縦）
           title: { display: false }
         }
       }
@@ -189,12 +242,26 @@ function draw() {
   chart = new Chart(ctx, config);
 }
 
+function updateDataList(numbers) {
+  const list = document.getElementById('dataList');
+  list.innerHTML = '';
+  numbers.forEach(num => {
+    const li = document.createElement('li');
+    li.textContent = num;
+    list.appendChild(li);
+  });
+}
+
 // リアルタイム
 document.getElementById('dataInput').addEventListener('input', () => {
   if (document.getElementById('realtime').checked) {
     draw();
   }
 });
+
+// 範囲入力変更時も更新
+document.getElementById('minValue').addEventListener('input', draw);
+document.getElementById('maxValue').addEventListener('input', draw);
 
 // 初回サンプル
 window.addEventListener('load', () => {
