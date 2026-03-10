@@ -2,62 +2,115 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>改行で数値を入力 → 箱ひげ図（2026年最新版）</title>
-  <!-- Chart.js 本体（最新安定版） -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>横向き箱ひげ図ジェネレーター</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-  <!-- 箱ひげ図プラグイン（sgratzl版・現在メンテされているもの） -->
   <script src="https://cdn.jsdelivr.net/npm/@sgratzl/chartjs-chart-boxplot@4.4.5/build/index.umd.min.js"></script>
 
   <style>
-    body { font-family: system-ui, sans-serif; padding: 20px; max-width: 960px; margin: auto; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f8f9fa;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      padding: 24px;
+    }
+    h2 {
+      margin-top: 0;
+      color: #2c3e50;
+    }
     textarea {
       width: 100%;
-      height: 160px;
-      font-family: monospace;
-      font-size: 15px;
+      height: 180px;
       padding: 12px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
+      font-family: 'Consolas', monospace;
+      font-size: 15px;
+      border: 1px solid #ced4da;
+      border-radius: 8px;
+      resize: vertical;
+      background: #fdfdfe;
+    }
+    .controls {
+      margin: 16px 0;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
     }
     button {
-      margin: 12px 0;
-      padding: 10px 20px;
+      padding: 10px 24px;
       font-size: 16px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
       cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    label {
+      font-size: 15px;
+      user-select: none;
     }
     #chartContainer {
-      margin-top: 20px;
+      margin-top: 24px;
       height: 420px;
-      border: 1px solid #eee;
+      background: #fff;
+      border: 1px solid #e9ecef;
       border-radius: 8px;
       overflow: hidden;
+      padding: 12px;
+    }
+    pre {
+      background: #f1f3f5;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 14px;
     }
   </style>
 </head>
 <body>
 
-<h2>箱ひげ図ジェネレーター（入力してすぐ見れる）</h2>
-<p>1行に1つの数値を入れてください（小数もOK）。空行や文字は自動で無視されます。</p>
+<div class="container">
+  <h2>横向き箱ひげ図ジェネレーター</h2>
+  <p>1行に1つの数値を入力してください（空行・文字は自動無視されます）</p>
 
-<textarea id="dataInput" placeholder="例：
-72.5
+  <pre>例：
+55
+62
 68
-81
-59.5
-90
-77
-64
-..."></textarea>
+71
+74
+78
+82
+85
+89
+95
+102
+108</pre>
 
-<div>
-  <button onclick="draw()">描画する</button>
-  <label style="margin-left:20px;">
-    <input type="checkbox" id="realtime" checked> 入力中リアルタイム更新
-  </label>
-</div>
+  <textarea id="dataInput" placeholder="ここにデータを貼り付け..."></textarea>
 
-<div id="chartContainer">
-  <canvas id="myChart"></canvas>
+  <div class="controls">
+    <button onclick="draw()">箱ひげ図を描く</button>
+    <label>
+      <input type="checkbox" id="realtime" checked> 入力中にリアルタイム更新
+    </label>
+  </div>
+
+  <div id="chartContainer">
+    <canvas id="myChart"></canvas>
+  </div>
 </div>
 
 <script>
@@ -72,28 +125,27 @@ function draw() {
     .filter(line => line !== '' && !isNaN(parseFloat(line)))
     .map(Number);
 
-  if (numbers.length < 3) {
-    alert('最低3〜4個以上の数値が必要です');
+  if (numbers.length < 4) {
+    alert('箱ひげ図には4個以上の数値が推奨されます');
     if (chart) chart.destroy();
     return;
   }
 
   const data = {
-    labels: ['データ'],
+    labels: ['データ分布'],
     datasets: [{
-      label: '値の分布',
+      label: '値',
       type: 'boxplot',
       data: [numbers],
-      backgroundColor: 'rgba(75, 192, 192, 0.25)',
-      borderColor: 'rgba(75, 192, 192, 1)',
+      backgroundColor: 'rgba(54, 162, 235, 0.28)',
+      borderColor: 'rgba(54, 162, 235, 0.9)',
       borderWidth: 2,
-      outlierColor: '#ff6384',
+      outlierColor: '#ff6b6b',
       padding: 20,
       itemRadius: 5,
-      itemStyle: 'circle',
-      outlierRadius: 5,
-      whiskerColor: 'rgba(0,0,0,0.6)',
-      medianColor: 'black',
+      outlierRadius: 6,
+      whiskerColor: 'rgba(0,0,0,0.5)',
+      medianColor: '#2c3e50',
       medianWidth: 3
     }]
   };
@@ -102,19 +154,31 @@ function draw() {
     type: 'boxplot',
     data: data,
     options: {
+      indexAxis: 'y',               // ← これで横向き！
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { position: 'top' },
+        legend: {
+          position: 'top',
+          labels: { font: { size: 14 } }
+        },
         title: {
           display: true,
-          text: `箱ひげ図（データ数: ${numbers.length}）`,
-          font: { size: 18 }
+          text: `横向き箱ひげ図（n = ${numbers.length}）`,
+          font: { size: 20 },
+          padding: { top: 10, bottom: 20 }
         }
       },
       scales: {
-        y: {
-          title: { display: true, text: '値' }
+        x: {  // 値軸（横）
+          title: {
+            display: true,
+            text: '値',
+            font: { size: 15 }
+          }
+        },
+        y: {  // カテゴリ軸（縦）→今回は1グループだけ
+          title: { display: false }
         }
       }
     }
@@ -125,14 +189,14 @@ function draw() {
   chart = new Chart(ctx, config);
 }
 
-// リアルタイム更新
+// リアルタイム
 document.getElementById('dataInput').addEventListener('input', () => {
   if (document.getElementById('realtime').checked) {
     draw();
   }
 });
 
-// 初回サンプル表示
+// 初回サンプル
 window.addEventListener('load', () => {
   document.getElementById('dataInput').value = 
 `55
@@ -146,8 +210,7 @@ window.addEventListener('load', () => {
 89
 95
 102
-108
-`.trim();
+108`.trim();
   draw();
 });
 </script>
