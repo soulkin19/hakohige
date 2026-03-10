@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>横向き箱ひげ図ジェネレーター（改良版）</title>
+  <title>箱ひげ図ジェネレーター</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@sgratzl/chartjs-chart-boxplot@4.4.5/build/index.umd.min.js"></script>
 
@@ -115,22 +115,9 @@
 <body>
 
 <div class="container">
-  <h2>横向き箱ひげ図ジェネレーター（データポイント非表示 + 範囲指定）</h2>
-  <p>1行に1つの数値を入力してください（空行・文字は自動無視されます）。データポイント（外れ値など）はグラフ上から非表示にし、下の「データ一覧」から確認できます。</p>
+  <h2></h2>箱ひげ図ジェネレーター</h2>
+  <p>1行に1つの数値を入力してください（空行・文字は自動無視されます）。下の「データ一覧」から確認できます。</p>
 
-  <pre>例：
-55
-62
-68
-71
-74
-78
-82
-85
-89
-95
-102
-108</pre>
 
   <textarea id="dataInput" placeholder="ここにデータを貼り付け..."></textarea>
 
