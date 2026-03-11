@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>横向き箱ひげ図ジェネレーター（改良版）</title>
+  <title>箱ひげ図メーカー</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@sgratzl/chartjs-chart-boxplot@4.4.5/build/index.umd.min.js"></script>
 
@@ -48,15 +48,24 @@
     button {
       padding: 10px 24px;
       font-size: 16px;
-      background: #007bff;
-      color: white;
       border: none;
       border-radius: 8px;
       cursor: pointer;
       transition: background 0.2s;
     }
-    button:hover {
-      background: #0056b3;
+    #drawBtn {
+      background: #007bff;
+      color: white;
+    }
+    #drawBtn:hover { background: #0056b3; }
+    #saveBtn {
+      background: #28a745;
+      color: white;
+    }
+    #saveBtn:hover { background: #218838; }
+    #saveBtn:disabled {
+      background: #6c757d;
+      cursor: not-allowed;
     }
     label {
       font-size: 15px;
@@ -115,8 +124,8 @@
 <body>
 
 <div class="container">
-  <h2>横向き箱ひげ図ジェネレーター（データポイント非表示 + 範囲指定）</h2>
-  <p>1行に1つの数値を入力してください（空行・文字は自動無視されます）。データポイント（外れ値など）はグラフ上から非表示にし、下の「データ一覧」から確認できます。</p>
+  <h2>箱ひげ図メーカー</h2>
+  <p>1行に1つの数値を入力してください（空行・文字は自動無視）。データポイントはグラフ上から非表示にし、下の一覧で確認できます。範囲を指定してズーム表示も可能です。</p>
 
   <pre>例：
 55
@@ -135,7 +144,8 @@
   <textarea id="dataInput" placeholder="ここにデータを貼り付け..."></textarea>
 
   <div class="controls">
-    <button onclick="draw()">箱ひげ図を描く</button>
+    <button id="drawBtn" onclick="draw()">箱ひげ図を描く</button>
+    <button id="saveBtn" disabled onclick="saveAsImage()">画像として保存 (PNG)</button>
     <label>
       <input type="checkbox" id="realtime" checked> 入力中にリアルタイム更新
     </label>
@@ -166,19 +176,19 @@ function draw() {
     .map(line => line.trim())
     .filter(line => line !== '' && !isNaN(parseFloat(line)))
     .map(Number)
-    .sort((a, b) => a - b);  // ソートして一覧表示用
+    .sort((a, b) => a - b);
 
   if (numbers.length < 4) {
     alert('箱ひげ図には4個以上の数値が推奨されます');
     if (chart) chart.destroy();
     updateDataList([]);
+    document.getElementById('saveBtn').disabled = true;
     return;
   }
 
-  // データ一覧更新
   updateDataList(numbers);
+  document.getElementById('saveBtn').disabled = false;
 
-  // 範囲入力
   const minVal = parseFloat(document.getElementById('minValue').value) || undefined;
   const maxVal = parseFloat(document.getElementById('maxValue').value) || undefined;
 
@@ -191,9 +201,9 @@ function draw() {
       backgroundColor: 'rgba(54, 162, 235, 0.28)',
       borderColor: 'rgba(54, 162, 235, 0.9)',
       borderWidth: 2,
-      outlierColor: 'transparent',  // 外れ値非表示
-      outlierRadius: 0,             // 外れ値非表示
-      itemRadius: 0,                // データポイント非表示
+      outlierColor: 'transparent',
+      outlierRadius: 0,
+      itemRadius: 0,
       padding: 20,
       whiskerColor: 'rgba(0,0,0,0.5)',
       medianColor: '#2c3e50',
@@ -205,34 +215,25 @@ function draw() {
     type: 'boxplot',
     data: data,
     options: {
-      indexAxis: 'y',               // 横向き
+      indexAxis: 'y',
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: {
-          position: 'top',
-          labels: { font: { size: 14 } }
-        },
+        legend: { position: 'top', labels: { font: { size: 14 } } },
         title: {
           display: true,
-          text: `横向き箱ひげ図（n = ${numbers.length}）`,
+          text: `箱ひげ図（n = ${numbers.length}）`,
           font: { size: 20 },
           padding: { top: 10, bottom: 20 }
         }
       },
       scales: {
-        x: {  // 値軸（横）
-          title: {
-            display: true,
-            text: '値',
-            font: { size: 15 }
-          },
+        x: {
+          title: { display: true, text: '値', font: { size: 15 } },
           min: minVal,
           max: maxVal
         },
-        y: {  // カテゴリ軸（縦）
-          title: { display: false }
-        }
+        y: { title: { display: false } }
       }
     }
   };
@@ -240,6 +241,18 @@ function draw() {
   if (chart) chart.destroy();
   const ctx = document.getElementById('myChart').getContext('2d');
   chart = new Chart(ctx, config);
+}
+
+function saveAsImage() {
+  if (!chart) return;
+  
+  const n = chart.data.datasets[0].data[0].length;
+  const base64 = chart.toBase64Image('image/png', 1.0);  // 高品質PNG
+  
+  const link = document.createElement('a');
+  link.href = base64;
+  link.download = `箱ひげ図_${n}個.png`;
+  link.click();
 }
 
 function updateDataList(numbers) {
@@ -252,14 +265,14 @@ function updateDataList(numbers) {
   });
 }
 
-// リアルタイム
+// リアルタイム更新
 document.getElementById('dataInput').addEventListener('input', () => {
   if (document.getElementById('realtime').checked) {
     draw();
   }
 });
 
-// 範囲入力変更時も更新
+// 範囲変更時も更新
 document.getElementById('minValue').addEventListener('input', draw);
 document.getElementById('maxValue').addEventListener('input', draw);
 
